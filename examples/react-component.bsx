@@ -1,0 +1,153 @@
+// Example React component using Britescript with JSX (.bsx file)
+
+import React, { useState } from 'react';
+
+// Britescript structs for props and state
+struct TodoItem {
+  id: number;
+  text: string;
+  completed: boolean;
+  createdAt: Date;
+}
+
+struct TodoListProps {
+  initialTodos?: TodoItem[];
+  maxItems?: number;
+}
+
+// Britescript traits for behavior
+trait TodoActions {
+  toggle(): void;
+  delete(): void;
+  edit(newText: string): void;
+}
+
+// Implement trait for TodoItem
+impl TodoActions for TodoItem {
+  toggle() {
+    this.completed = !this.completed;
+  }
+  
+  delete() {
+    // This would typically remove the item from a list
+    console.log(`Deleting todo: ${this.text}`);
+  }
+  
+  edit(newText: string) {
+    this.text = newText;
+  }
+}
+
+// React component using Britescript features
+function TodoList({ initialTodos = [], maxItems = 10 }: TodoListProps) {
+  const [todos, setTodos] = useState<TodoItem[]>(initialTodos);
+  const [inputText, setInputText] = useState("");
+
+  // Use pipe operations for data processing
+  let completedCount = todos
+    |> filter(todo => todo.completed)
+    |> length;
+
+  let pendingTodos = todos
+    |> filter(todo => !todo.completed)
+    |> sortBy(todo => todo.createdAt);
+
+  const addTodo = () => {
+    if (inputText.trim() && todos.length < maxItems) {
+      let newTodo: TodoItem = {
+        id: Date.now(),
+        text: inputText.trim(),
+        completed: false,
+        createdAt: new Date()
+      };
+      
+      setTodos([...todos, newTodo]);
+      setInputText("");
+    }
+  };
+
+  const toggleTodo = (id: number) => {
+    setTodos(todos.map(todo => 
+      todo.id === id ? { ...todo, completed: !todo.completed } : todo
+    ));
+  };
+
+  const deleteTodo = (id: number) => {
+    setTodos(todos.filter(todo => todo.id !== id));
+  };
+
+  return (
+    <div className="todo-list">
+      <h2>Britescript Todo List</h2>
+      
+      <div className="todo-stats">
+        <span>Total: {todos.length}</span>
+        <span>Completed: {completedCount}</span>
+        <span>Pending: {todos.length - completedCount}</span>
+      </div>
+      
+      <div className="add-todo">
+        <input
+          type="text"
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && addTodo()}
+          placeholder="Add a new todo..."
+          disabled={todos.length >= maxItems}
+        />
+        <button 
+          onClick={addTodo}
+          disabled={!inputText.trim() || todos.length >= maxItems}
+        >
+          Add Todo
+        </button>
+      </div>
+      
+      {todos.length >= maxItems && (
+        <div className="warning">
+          Maximum number of todos reached ({maxItems})
+        </div>
+      )}
+      
+      <div className="todos">
+        <h3>Pending Tasks</h3>
+        {pendingTodos.map(todo => (
+          <div key={todo.id} className="todo-item pending">
+            <input
+              type="checkbox"
+              checked={todo.completed}
+              onChange={() => toggleTodo(todo.id)}
+            />
+            <span className="todo-text">{todo.text}</span>
+            <span className="todo-date">
+              {todo.createdAt.toLocaleDateString()}
+            </span>
+            <button onClick={() => deleteTodo(todo.id)}>Delete</button>
+          </div>
+        ))}
+        
+        <h3>Completed Tasks</h3>
+        {todos
+          |> filter(todo => todo.completed)
+          |> map(todo => (
+            <div key={todo.id} className="todo-item completed">
+              <input
+                type="checkbox"
+                checked={todo.completed}
+                onChange={() => toggleTodo(todo.id)}
+              />
+              <span className="todo-text">{todo.text}</span>
+              <span className="todo-date">
+                {todo.createdAt.toLocaleDateString()}
+              </span>
+              <button onClick={() => deleteTodo(todo.id)}>Delete</button>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  );
+}
+
+export default TodoList;
+export type { TodoItem, TodoListProps };

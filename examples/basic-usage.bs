@@ -1,0 +1,65 @@
+// Example Britescript file that will be transformed by the Vite plugin
+
+// Define structs
+struct User {
+  id: number;
+  name: string;
+  email: string;
+  isActive: boolean;
+}
+
+struct ApiResponse<T> {
+  data: T;
+  status: number;
+  message: string;
+}
+
+// Define traits
+trait Displayable {
+  display(): string;
+}
+
+trait Serializable {
+  toJSON(): object;
+}
+
+// Implement traits for structs
+impl Displayable for User {
+  display() {
+    return `${this.name} (${this.email})`;
+  }
+}
+
+impl Serializable for User {
+  toJSON() {
+    return {
+      id: this.id,
+      name: this.name,
+      email: this.email,
+      isActive: this.isActive
+    };
+  }
+}
+
+// Use let bindings (will be transformed to const)
+let users: User[] = [
+  { id: 1, name: "Alice", email: "alice@example.com", isActive: true },
+  { id: 2, name: "Bob", email: "bob@example.com", isActive: false }
+];
+
+// Use pipe operations
+let activeUserNames = users
+  |> filter(user => user.isActive)
+  |> map(user => user.display())
+  |> join(", ");
+
+console.log("Active users:", activeUserNames);
+
+// Create API response
+let response: ApiResponse<User[]> = {
+  data: users,
+  status: 200,
+  message: "Users retrieved successfully"
+};
+
+export { User, ApiResponse, users, response };

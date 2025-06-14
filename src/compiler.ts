@@ -34,7 +34,7 @@ export async function compileBritescript(
     
     let transformedCode = code;
     
-    // Only transform if there's actual Britescript syntax
+    // Transform Britescript syntax if present
     if (hasBritescriptSyntax) {
       if (options.verbose) {
         console.log(`[britescript] Found Britescript syntax in ${id}, transforming...`);
@@ -45,17 +45,25 @@ export async function compileBritescript(
       }
     }
     
+    // For .bsx files, always ensure they're treated as JSX, even without Britescript syntax
+    if (isBsxFile) {
+      // For .bsx files, we need to always return transformed code so Vite knows to process it
+      // This ensures the plugin takes ownership of .bsx files
+      transformedCode = transformedCode; // Keep as-is for JSX processing
+    }
+    
     // For .bsx files, preserve JSX - the React plugin will handle it
-    if (isBsxFile && options.jsx && hasBritescriptSyntax) {
+    if (isBsxFile && options.jsx) {
       transformedCode = transformJSX(transformedCode, options);
     }
     
     // Generate source map if enabled and transformation occurred
     let sourceMap: string | undefined;
-    if (options.sourceMaps && hasBritescriptSyntax) {
+    if (options.sourceMaps && (hasBritescriptSyntax || isBsxFile)) {
       sourceMap = generateSourceMap(id, code, transformedCode);
     }
     
+    // Always return transformed code for .bsx files to ensure they're processed
     return {
       code: transformedCode,
       map: sourceMap,

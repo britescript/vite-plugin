@@ -35,6 +35,7 @@ export function britescript(userOptions: BritescriptPluginOptions = {}): Plugin 
   
   return {
     name: PLUGIN_NAME,
+    enforce: 'pre', // Run before other plugins
     
     configResolved(resolvedConfig) {
       config = resolvedConfig;
@@ -53,7 +54,16 @@ export function britescript(userOptions: BritescriptPluginOptions = {}): Plugin 
     },
     
     async resolveId(id, importer) {
-      // Let Vite handle resolution, just ensure our files are recognized
+      // Handle .bsx imports - make sure they resolve properly
+      if (id.endsWith('.bsx') || id.endsWith('.bs')) {
+        return null; // Let Vite handle the resolution
+      }
+      
+      // Handle imports without extensions
+      if (importer && !id.startsWith('.') && !id.startsWith('/') && !id.includes('node_modules')) {
+        return null;
+      }
+      
       return null;
     },
     
@@ -67,6 +77,10 @@ export function britescript(userOptions: BritescriptPluginOptions = {}): Plugin 
       if (!filter(id)) {
         return null;
       }
+      
+      // Always process .bsx files to prevent other plugins from failing
+      const isBsxFile = id.endsWith('.bsx');
+      const isBsFile = id.endsWith('.bs');
       
       if (options.verbose) {
         console.log(`[${PLUGIN_NAME}] Transforming ${id}`);
@@ -95,6 +109,20 @@ export function britescript(userOptions: BritescriptPluginOptions = {}): Plugin 
         }
         
         const isJSX = id.endsWith('.bsx');
+        
+        // For .bsx files, we need to tell Vite this is JSX code
+        if (isJSX) {
+          // Transform the id to make Vite treat it as JSX
+          return {
+            code: result.code,
+            map: result.map ? JSON.parse(result.map) : null,
+            meta: {
+              vite: {
+                lang: 'jsx'
+              }
+            }
+          };
+        }
         
         return {
           code: result.code,
